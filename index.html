@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Μαγικό Τετράδιο AI Junior V14 PARENT GUIDE FINAL</title>
+  <meta name="description" content="Παιδική AI εκπαιδευτική εφαρμογή από Νηπιαγωγείο έως ΣΤ’ Δημοτικού, με οδηγίες λειτουργίας για γονείς, στοιχεία γονέα/παιδιού, φωτογραφία παιδιού, AI που μιλάει στο παιδί με το όνομά του, ορθογραφία, παραμύθια και AI Βιβλιοθήκη." />
+  <meta name="theme-color" content="#7b4cff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Μαγικό Τετράδιο" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-stars" aria-hidden="true"></div>
+
+  <button id="installBtn" type="button" hidden title="Εγκατάσταση εφαρμογής" aria-label="Install"
+    style="position:fixed;top:14px;right:14px;z-index:9999;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:62px;background:rgba(224,174,66,.16);border:1px solid rgba(224,174,66,.45);color:#F3D28C;border-radius:14px;padding:6px 10px;line-height:1;cursor:pointer;backdrop-filter:blur(6px)">
+    <span style="font-size:18px;font-weight:800">⇩</span>
+    <span style="font-size:10px;font-weight:800;letter-spacing:.4px">Install</span>
+  </button>
+  <div class="workspace">
+    <aside class="left-panel">
+      <section class="brand-box">
+        <span class="version-pill">EV LABS AI • V14 • PARENT GUIDE • PHONE + TABLET • COMPLETE DEMO</span>
+        <img src="assets/logo.png" class="logo" alt="Μαγικό Τετράδιο AI Junior logo" />
+        <h1>Μαγικό Τετράδιο <span>AI Junior</span></h1>
+        <p>Από Νηπιαγωγείο μέχρι ΣΤ’ Δημοτικού, με οδηγίες λειτουργίας για γονείς, στοιχεία γονέα/παιδιού, φωτογραφία παιδιού, προσωπική προσφώνηση με όνομα, ορθογραφία, παραμύθια AI, AI βιβλιοθήκη και γονικό έλεγχο.</p>
+        <div class="brand-stats">
+          <div><b>4–12</b><small>ηλικίες</small></div>
+          <div><b>300+</b><small>ερωτήσεις</small></div>
+          <div><b>📋</b><small>οδηγίες γονέα</small></div>
+        </div>
+      </section>
+
+      <nav class="side-menu" aria-label="Κύριο μενού">
+        <button data-go="home">🏠 Αρχική</button>
+        <button data-go="services">✨ Υπηρεσίες</button>
+        <button data-go="profile">👤 Στοιχεία Γονέα / Παιδιού</button>
+        <button data-go="guide">📋 Οδηγίες λειτουργίας</button>
+        <button data-go="grades">🎒 Τάξεις / Ύλη</button>
+        <button data-go="lessonStart">🧠 Μάθημα</button>
+        <button data-go="fairytales">📚 Παραμύθια AI</button>
+        <button data-go="library">📖 AI Βιβλιοθήκη</button>
+        <button data-go="daily">🌞 Ημερήσιο Πλάνο</button>
+        <button data-go="parent">👨‍👩‍👧 Πίνακας Γονέα</button>
+        <button data-go="teacher">🏫 School Mode</button>
+        <button data-go="safety">🛡️ Safe AI</button>
+      </nav>
+
+      <section class="note-box">
+        <b>V14 κλειδωμένο</b>
+        <ul>
+          <li>Μένει το ακριβές λογότυπο που έστειλες.</li>
+          <li>Οι υπηρεσίες ανοίγουν με εσωτερικό navigation.</li>
+          <li>Οι ερωτήσεις αλλάζουν με κουμπί, εντολή “επόμενη” ή φωνή όπου υποστηρίζεται.</li>
+          <li>Τα Παραμύθια AI μένουν μέσα, πιο δυνατά.</li>
+          <li>Responsive βάση: κινητό κάθετα, tablet άνετο με πιο φαρδιά οθόνη.</li>
+          <li>Προστέθηκαν στοιχεία γονέα και παιδιού, φωτογραφία παιδιού και προσωπική προσφώνηση με όνομα.</li>
+          <li>Προστέθηκαν οδηγίες λειτουργίας και καθαρή εξήγηση γιατί είναι χρήσιμο για γονείς.</li>
+          <li>Προστέθηκε εναλλαγή προβολής Κινητό / Tablet για δοκιμή από υπολογιστή.</li>
+          <li>Μπήκε AI Βιβλιοθήκη: γονέας/δάσκαλος ανεβάζει κείμενο/βιβλίο και το app φτιάχνει ανάγνωση, κατανόηση, ορθογραφία και σωστό/λάθος.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main class="phone-area">
+      <div class="device-toolbar" aria-label="Προβολή συσκευής">
+        <button class="device-toggle active" data-device-mode="phone">📱 Κινητό</button>
+        <button class="device-toggle" data-device-mode="tablet">▣ Tablet</button>
+      </div>
+      <div id="deviceFrame" class="phone-frame phone-mode" role="application" aria-label="Demo εφαρμογής Μαγικό Τετράδιο AI Junior">
+        <div class="notch"></div>
+        <div id="app" class="app-screen" aria-live="polite"></div>
+      </div>
+      <p class="open-help">Άνοιγμα: αποσυμπίεση ZIP και πάτημα <b>01_OPEN_APP_WINDOWS.cmd</b> ή <b>index.html</b>. Από υπολογιστή δοκίμασε τα κουμπιά <b>Κινητό</b> / <b>Tablet</b>.</p>
+    </main>
+  </div>
+  <script src="app.js"></script>
+  <script>
+  // Register service worker (PWA install + offline)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+  // Install button — native prompt where available, else clear how-to-install message
+  (function () {
+    var deferred = null;
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    var btn = document.getElementById('installBtn');
+    function show() { if (btn && !standalone) btn.hidden = false; }
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; show(); });
+    window.addEventListener('appinstalled', function () { if (btn) btn.hidden = true; });
+    if (!standalone) show();
+    if (btn) btn.addEventListener('click', async function () {
+      if (deferred) { deferred.prompt(); try { await deferred.userChoice; } catch (e) {} deferred = null; btn.hidden = true; return; }
+      alert("📲 Εγκατέστησε το Μαγικό Τετράδιο σαν εφαρμογή:\n\n📱 iPhone (Safari): πάτα «Κοινή χρήση» (το τετράγωνο με ↑) → «Προσθήκη στην οθόνη Αφετηρίας».\n🤖 Android (Chrome): μενού ⋮ → «Εγκατάσταση εφαρμογής».\n💻 Υπολογιστής (Chrome/Edge): το εικονίδιο εγκατάστασης στη γραμμή διεύθυνσης, ή μενού → «Εγκατάσταση εφαρμογής».\n\nΘα αποκτήσεις εικονίδιο και ανοίγει σε πλήρη οθόνη — σαν κανονική εφαρμογή!");
+    });
+  })();
+  </script>
+</body>
+</html>

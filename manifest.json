@@ -1,0 +1,18 @@
+{
+  "name": "Μαγικό Τετράδιο AI Junior",
+  "short_name": "Μαγικό Τετράδιο",
+  "description": "Παιδική AI εκπαιδευτική εφαρμογή για Νηπιαγωγείο έως ΣΤ' Δημοτικού, με στοιχεία γονέα/παιδιού, ορθογραφία, παραμύθια AI και γονικό πίνακα.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "el",
+  "background_color": "#7b4cff",
+  "theme_color": "#7b4cff",
+  "categories": ["education", "kids"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
