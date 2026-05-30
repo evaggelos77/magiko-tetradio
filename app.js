@@ -473,19 +473,63 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   _voice = pickGreekFemaleVoice();
   window.speechSynthesis.onvoiceschanged = () => { _voice = pickGreekFemaleVoice(); };
 }
-function speak(text){
+/* speak(text)
+   First tries the premium backend voice (OpenAI TTS — clean Greek female,
+   same on every device). On error / offline backend, falls back to the
+   browser's built-in Web Speech voice so the app keeps talking either way.
+*/
+const MAGIKO_TTS_URL = (
+  (typeof window !== 'undefined' && window.MAGIKO_TTS_URL)
+  || 'https://magiko-tetradio-backend.onrender.com'
+).replace(/\/+$/, '') + '/api/tts';
+
+let _currentAudio = null;
+let _backendUp = true;
+
+function _speakBrowser(text){
   try{
     if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(String(text));
-    u.lang = 'el-GR';
-    u.rate = 0.95;
-    u.pitch = 1.18;   // a touch higher so it sounds gentler / more feminine
-    u.volume = 1;
+    u.lang = 'el-GR'; u.rate = 0.95; u.pitch = 1.18; u.volume = 1;
     const v = _voice || pickGreekFemaleVoice();
     if (v) u.voice = v;
     window.speechSynthesis.speak(u);
   }catch(e){}
+}
+
+async function speak(text){
+  const t = String(text || '').trim();
+  if(!t) return;
+  // stop anything already playing / queued
+  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  if(_currentAudio){ try{ _currentAudio.pause(); _currentAudio.src = ''; }catch(e){} _currentAudio = null; }
+  // recent backend failure → use browser voice for ~60s (don't hammer it)
+  if(!_backendUp){ _speakBrowser(t); return; }
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch(MAGIKO_TTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: t, voice: 'shimmer' }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if(!res.ok) throw new Error('tts http ' + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _currentAudio = audio;
+    audio.onended = () => { try{ URL.revokeObjectURL(url); }catch(e){} if(_currentAudio === audio) _currentAudio = null; };
+    audio.onerror = () => { try{ URL.revokeObjectURL(url); }catch(e){} _speakBrowser(t); };
+    await audio.play();
+  }catch(err){
+    // backend unreachable — fall back to browser voice and back off for a minute
+    _backendUp = false;
+    setTimeout(() => { _backendUp = true; }, 60000);
+    _speakBrowser(t);
+  }
 }
 function seeded(n){ const x=Math.sin(n*999 + Date.now()/20000)*10000; return x-Math.floor(x); }
 
