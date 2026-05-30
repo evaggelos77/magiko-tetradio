@@ -143,3 +143,35 @@ button{cursor:pointer}
   .version-pill, .note-box, .open-help, .device-toolbar { display: none !important; }
   .phone-frame .notch { display: none !important; }
 }
+
+
+/* ============================================================
+   CLEAN MODE — no left demo panel, no device toggle, no help text.
+   The phone-frame is the whole app. Centered on desktop.
+   ============================================================ */
+.left-panel,
+.device-toolbar,
+.open-help,
+.note-box,
+.version-pill { display: none !important; }
+.workspace {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  padding: 24px 14px !important;
+}
+.phone-area {
+  width: 100% !important;
+  max-width: 480px !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+}
+.phone-frame,
+.phone-frame.phone-mode,
+.phone-frame.tablet-mode {
+  margin: 0 auto !important;
+}
+@media (max-width: 880px) {
+  .workspace { padding: 0 !important; }
+  .phone-area { max-width: 100% !important; }
+}

@@ -570,7 +570,7 @@ function gradeChips(){ return `<div class="chips">${Object.entries(grades).map((
 function home(){return `<section class="screen hero">
   <div class="topbar"><button class="icon-btn" data-go="services">☰</button><h2>Μαγικό Τετράδιο</h2><button class="icon-btn" data-go="safety">🛡️</button></div>
   <img src="assets/logo.png" class="main-logo" alt="Λογότυπο">
-  <h1 class="hero-title">V14: ${esc(childFirstName())}, πάμε μαζί!</h1>
+  <h1 class="hero-title">${esc(childFirstName())}, πάμε μαζί!</h1>
   <p class="hero-sub">Πλέον έχει οδηγίες λειτουργίας για γονείς, στοιχεία γονέα και παιδιού, φωτογραφία παιδιού και η AI διαβάζει το όνομα από το προφίλ για να μιλάει προσωπικά στο παιδί.</p>
   <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>Όνομα: ${esc(state.childName)} • Ηλικία: ${esc(state.childAge)} • Γονέας: ${esc(state.parentName)}</small></div></div>
   <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button></div>
@@ -618,7 +618,7 @@ function guideView(){return `<section class="screen guide-screen">
 
 function servicesView(){return `<section class="screen">
   <div class="topbar"><button class="icon-btn" data-go="home">←</button><h2>Υπηρεσίες</h2><button class="icon-btn" data-go="profile">👤</button></div>
-  <p class="sub">Στη V14 προσθέσαμε οδηγίες λειτουργίας, καθαρό μήνυμα για γονείς και διατήρηση όλων των λειτουργιών V13.</p>
+  <p class="sub">Διάλεξε υπηρεσία και ξεκίνα — όλα είναι σχεδιασμένα ήρεμα και χαρούμενα για το παιδί.</p>
   <div class="grid2">${services.map(s=>`<button class="service-card ${state.lastOpened===s.title?'active':''}" data-service="${s.id}"><span class="big">${s.icon}</span><b>${esc(s.title)}</b><small>${esc(s.desc)}</small></button>`).join('')}</div>${nav('services')}
 </section>`}
 
