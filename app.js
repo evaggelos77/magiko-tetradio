@@ -822,14 +822,14 @@ function lessonView(){
         <button class="wide soft" data-go="review">Επανάληψη λαθών</button>
         <button class="wide soft" data-go="levels">Επίπεδο</button>
       </div>
-      <div class="parent-ask" style="margin-top:10px;padding:12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)">
-        <small style="opacity:.85;display:block;margin-bottom:6px">👨‍👩‍👧 <b>Γονέας:</b> γράψε ένα θέμα και θα φτιάξει ερώτηση πάνω σε αυτό</small>
-        <div style="display:flex;gap:6px">
-          <input id="parentTopic" type="text" placeholder="π.χ. προπαίδεια του 7, κεφαλαία γράμματα, ιστορία της Ελλάδας…" value="${esc(state.parentTopic||'')}" style="flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.18);color:inherit;font:inherit" ${state.aiLoading?'disabled':''}>
-          <button class="wide alt" data-action="parentAsk" style="flex:0 0 auto;min-width:54px" ${state.aiLoading?'disabled':''}>✨</button>
-          ${(state.parentTopic||'').trim()?`<button class="wide soft" data-action="clearParentTopic" style="flex:0 0 auto;min-width:44px" title="Καθάρισμα">✕</button>`:''}
+      <div class="parent-ask" style="margin-top:10px;padding:14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)">
+        <small style="opacity:.9;display:block;margin-bottom:8px">👨‍👩‍👧 <b>Γονέας:</b> γράψε ένα θέμα και θα φτιάξει ερώτηση πάνω σε αυτό</small>
+        <input id="parentTopic" type="text" placeholder="π.χ. προπαίδεια του 7, κεφαλαία γράμματα…" value="${esc(state.parentTopic||'')}" style="display:block;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.22);color:inherit;font:inherit;margin-bottom:8px" ${state.aiLoading?'disabled':''}>
+        <div style="display:flex;gap:8px">
+          <button data-action="parentAsk" style="flex:1;padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,#ff9b6b,#f06ca4);color:#fff;font-weight:800;cursor:pointer;font-size:15px" ${state.aiLoading?'disabled':''}>✨ Ζήτα ερώτηση</button>
+          ${(state.parentTopic||'').trim()?`<button data-action="clearParentTopic" style="flex:0 0 auto;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);color:inherit;cursor:pointer" title="Καθάρισμα">✕</button>`:''}
         </div>
-        ${state.aiError?`<small style="display:block;margin-top:6px;color:#ffb3b3">${esc(state.aiError)}</small>`:''}
+        ${state.aiError?`<small style="display:block;margin-top:8px;color:#ffb3b3">${esc(state.aiError)}</small>`:''}
       </div>
     </div>
     ${commandBox('lesson')}
