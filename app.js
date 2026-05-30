@@ -484,10 +484,30 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
    same on every device). On error / offline backend, falls back to the
    browser's built-in Web Speech voice so the app keeps talking either way.
 */
-const MAGIKO_TTS_URL = (
-  (typeof window !== 'undefined' && window.MAGIKO_TTS_URL)
+/* Stable per-device id (UUID) so the backend can count usage. */
+const MAGIKO_BACKEND = (
+  (typeof window !== 'undefined' && window.MAGIKO_BACKEND)
   || 'https://magiko-tetradio-backend.onrender.com'
-).replace(/\/+$/, '') + '/api/tts';
+).replace(/\/+$/, '');
+const MAGIKO_TTS_URL      = MAGIKO_BACKEND + '/api/tts';
+const MAGIKO_QGEN_URL     = MAGIKO_BACKEND + '/api/generate-question';
+const MAGIKO_USAGE_URL    = MAGIKO_BACKEND + '/api/usage';
+const MAGIKO_CHECKOUT_URL = MAGIKO_BACKEND + '/api/checkout';
+
+function getDeviceId(){
+  try{
+    let id = localStorage.getItem('magiko_device_id');
+    if(id && id.length >= 8) return id;
+    id = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+    localStorage.setItem('magiko_device_id', id);
+    return id;
+  }catch(e){
+    return 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+  }
+}
+const MAGIKO_DEVICE_ID = getDeviceId();
 
 let _currentAudio = null;
 let _backendUp = true;
@@ -517,7 +537,7 @@ async function speak(text){
     const timer = setTimeout(() => ctrl.abort(), 12000);
     const res = await fetch(MAGIKO_TTS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Device-Id': MAGIKO_DEVICE_ID },
       body: JSON.stringify({ text: t, voice: 'shimmer' }),
       signal: ctrl.signal,
     });
@@ -628,12 +648,6 @@ function currentQuestion(){
   return autoQuestion(state.module, state.qIndex);
 }
 
-/* Backend URL for fresh AI-generated questions (same backend as TTS) */
-const MAGIKO_QGEN_URL = (
-  (typeof window !== 'undefined' && window.MAGIKO_QGEN_URL)
-  || 'https://magiko-tetradio-backend.onrender.com'
-).replace(/\/+$/, '') + '/api/generate-question';
-
 function _remember(qtext){
   if(!qtext) return;
   state.recentQs = state.recentQs || [];
@@ -653,7 +667,7 @@ async function requestAiQuestion(topic){
     const timer = setTimeout(() => ctrl.abort(), 18000);
     const res = await fetch(MAGIKO_QGEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Device-Id': MAGIKO_DEVICE_ID },
       body: JSON.stringify({
         module: state.module,
         moduleTitle: m && m.title ? m.title : '',
@@ -665,12 +679,22 @@ async function requestAiQuestion(topic){
       signal: ctrl.signal,
     });
     clearTimeout(timer);
+    // 402 → out of quota, show paywall and stop (no fallback)
+    if(res.status === 402){
+      state.aiLoading = false;
+      state.screen = 'paywall';
+      await fetchUsage(); // refresh shown counts/plan
+      render();
+      return;
+    }
     if(!res.ok){
       let msg = 'Δεν μπόρεσα να φτιάξω νέα ερώτηση τώρα.';
       try{ const j = await res.json(); if(j && j.detail) msg = String(j.detail); }catch(e){}
       throw new Error(msg);
     }
     const data = await res.json();
+    // backend now returns the updated usage alongside the question
+    if(data.usage){ state.usage = data.usage; }
     // Map backend shape -> app's internal question shape (uses q(), see line ~446)
     const visuals = data.emoji ? [String(data.emoji)] : [];
     const aiQ = {
@@ -701,6 +725,143 @@ async function requestAiQuestion(topic){
     state.aiLoading = false;
     render();
   }
+}
+
+/* --------- Plan + usage (freemium) --------- */
+async function fetchUsage(){
+  try{
+    const res = await fetch(MAGIKO_USAGE_URL, {
+      headers: { 'X-Device-Id': MAGIKO_DEVICE_ID }
+    });
+    if(res.ok){
+      const data = await res.json();
+      state.usage = data;
+    }
+  }catch(e){ /* offline → keep prior state */ }
+}
+
+function planLabel(usage){
+  if(!usage) return '';
+  const plan = usage.plan || 'trial';
+  if(plan === 'full' && usage.is_active)  return '✓ Madame Full';
+  if(plan === 'basic' && usage.is_active) {
+    const rem = (usage.ai_remaining == null) ? '∞' : usage.ai_remaining;
+    return `Basic · ${rem} ερωτήσεις ακόμα`;
+  }
+  // trial / canceled
+  const rem = (usage.ai_remaining == null) ? '?' : usage.ai_remaining;
+  return `Δωρεάν δοκιμή · ${rem}/${usage.ai_quota ?? '?'} ερωτήσεις`;
+}
+
+function usageBadge(){
+  const lbl = planLabel(state.usage);
+  if(!lbl) return '';
+  const lowTrial = state.usage && state.usage.plan === 'trial' && (state.usage.ai_remaining ?? 9) <= 2;
+  return `<button class="source-badge ${lowTrial?'auto':''}" data-go="paywall" style="cursor:pointer">${esc(lbl)}</button>`;
+}
+
+async function startCheckout(planId){
+  state.checkoutLoading = planId;
+  state.checkoutError = '';
+  render();
+  try{
+    const res = await fetch(MAGIKO_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Device-Id': MAGIKO_DEVICE_ID },
+      body: JSON.stringify({ plan: planId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(res.ok && data.url){
+      window.location.href = data.url;
+      return;
+    }
+    state.checkoutError = (data && data.detail)
+      ? `Οι πληρωμές δεν είναι έτοιμες ακόμα (${data.detail}). Δοκίμασε σε λίγο.`
+      : 'Δεν μπόρεσα να ανοίξω την πληρωμή. Δοκίμασε ξανά.';
+  }catch(err){
+    state.checkoutError = 'Πρόβλημα σύνδεσης για την πληρωμή. Δοκίμασε ξανά σε λίγο.';
+  }finally{
+    state.checkoutLoading = '';
+    render();
+  }
+}
+
+function planCard(opts){
+  // opts: {id, badge, name, price, period, bullets, highlight}
+  const loading = state.checkoutLoading === opts.id;
+  const bullets = (opts.bullets || []).map(b => `<li>${esc(b)}</li>`).join('');
+  const ring = opts.highlight ? 'box-shadow:0 0 0 3px rgba(123,76,255,.35)' : '';
+  return `<div class="card" style="margin-bottom:12px;${ring}">
+    ${opts.badge ? `<div class="source-badge" style="background:#fff0b8;color:#5d3700">${esc(opts.badge)}</div>` : ''}
+    <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px">
+      <b style="font-size:22px">${esc(opts.name)}</b>
+      <span style="margin-left:auto;font-size:22px;font-weight:950;color:#5d3700">${esc(opts.price)}<small style="font-size:13px;color:#7a6a93">${esc(opts.period)}</small></span>
+    </div>
+    <ul style="margin:10px 0 12px;padding-left:18px;line-height:1.5">${bullets}</ul>
+    <button class="wide ${opts.highlight ? '' : 'alt'}" data-plan="${esc(opts.id)}" ${loading?'disabled':''}>${loading ? 'Μια στιγμή…' : 'Επιλογή'}</button>
+  </div>`;
+}
+
+function paywallView(){
+  const u = state.usage || {};
+  const isOut = u.plan === 'trial' && (u.ai_remaining ?? 1) <= 0;
+  const intro = isOut
+    ? 'Η δωρεάν δοκιμή τελείωσε. Διάλεξε ένα πακέτο για να συνεχίσεις χωρίς όρια.'
+    : 'Διάλεξε πακέτο για να ξεκλειδώσεις περισσότερες ερωτήσεις και χωρίς όρια χρήση.';
+  return `<section class="screen">
+    <div class="topbar"><button class="icon-btn" data-go="home">←</button><h2>Πακέτα</h2><span class="icon-btn" style="visibility:hidden">·</span></div>
+    <div class="card">
+      <b style="font-size:18px">✨ Premium Μαγικό Τετράδιο</b>
+      <small style="display:block;margin-top:6px;line-height:1.45">${esc(intro)}</small>
+      ${state.usage ? `<div style="margin-top:8px"><span class="source-badge">${esc(planLabel(state.usage))}</span></div>` : ''}
+    </div>
+    ${planCard({
+      id:'basic_monthly', name:'Basic', price:'2,99€', period:' / μήνα',
+      bullets:[
+        '30 νέες AI ερωτήσεις τον μήνα',
+        'Premium γυναικεία φωνή',
+        'Όλη η έτοιμη ύλη χωρίς όρια',
+        'Ακύρωση όποτε θες'
+      ]
+    })}
+    ${planCard({
+      id:'full_monthly', highlight:true, badge:'Πιο αγαπημένο',
+      name:'Full', price:'8,99€', period:' / μήνα',
+      bullets:[
+        'Απεριόριστες AI ερωτήσεις',
+        'Γονέας: γράφει θέμα → προσαρμοσμένες ερωτήσεις',
+        'Premium γυναικεία φωνή',
+        'AI Βιβλιοθήκη + όλα τα μαθήματα'
+      ]
+    })}
+    ${planCard({
+      id:'full_yearly', name:'Full Ετήσιο', price:'69,99€', period:' / χρόνο',
+      bullets:[
+        'Όλα του Full',
+        'Πληρώνεις μία φορά τον χρόνο',
+        'Εξοικονόμηση ~35€ / χρόνο'
+      ]
+    })}
+    ${state.checkoutError ? `<small style="display:block;color:#ffb3b3;text-align:center">${esc(state.checkoutError)}</small>` : ''}
+    <small style="display:block;text-align:center;opacity:.75;margin-top:10px">Ασφαλής πληρωμή μέσω Stripe. Ακύρωση οποτεδήποτε.</small>
+    ${nav('home')}
+  </section>`;
+}
+
+function handleCheckoutReturn(){
+  try{
+    const sp = new URLSearchParams(window.location.search);
+    if(sp.get('checkout') === 'success'){
+      history.replaceState({},'', window.location.pathname);
+      setTimeout(fetchUsage, 1200);   // give the webhook a moment
+      setTimeout(fetchUsage, 4000);
+      setTimeout(()=>{ alert('✅ Η συνδρομή ενεργοποιήθηκε! Καλώς ήρθες. 💜'); }, 50);
+      state.screen = 'home';
+    } else if(sp.get('checkout') === 'cancel'){
+      history.replaceState({},'', window.location.pathname);
+      state.screen = 'paywall';
+    }
+  }catch(e){}
 }
 
 function childFirstName(){
@@ -740,6 +901,7 @@ function home(){return `<section class="screen hero">
   <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>${profileSummaryLine()}</small></div></div>
   <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button></div>
   <div class="mini-stats"><span>👤 Προφίλ παιδιού</span><span>📸 Φωτογραφία</span><span>🔊 Μιλάει με όνομα</span><span>📋 Οδηγίες γονέα</span></div>
+  ${state.usage ? `<div style="margin-top:12px;text-align:center">${usageBadge()}</div>` : ''}
   ${nav('home')}
 </section>`}
 
@@ -810,7 +972,7 @@ function lessonView(){
     <div class="topbar"><button class="icon-btn" data-go="modules">←</button><h2>${esc(m.title)}</h2><button class="icon-btn" data-speak="${esc(question.q)}">🔊</button></div>
     <div class="module-head"><span class="big-emoji">${m.icon}</span><div><b>${esc(m.title)}</b><small>${question._ai?'✨ Νέα AI ερώτηση':(isAuto?'🤖 Αυτόματη νέα ερώτηση':'📚 Έτοιμη ύλη')} • Ερώτηση ${state.qIndex+1} • 🎚️ ${levelLabel()}</small></div></div>
     <div class="lesson">
-      <div class="lesson-top"><span class="source-badge ${question._ai?'auto':(isAuto?'auto':'')}">${question._ai?'✨ AI νέα':(isAuto?'🤖 auto':'📚 ύλη')}</span><span class="source-badge">🎚️ ${levelLabel()}</span><span class="source-badge">✅ ${accuracy()}%</span><span class="source-badge">⭐ ${state.stars}</span></div>
+      <div class="lesson-top" style="flex-wrap:wrap"><span class="source-badge ${question._ai?'auto':(isAuto?'auto':'')}">${question._ai?'✨ AI νέα':(isAuto?'🤖 auto':'📚 ύλη')}</span><span class="source-badge">🎚️ ${levelLabel()}</span><span class="source-badge">✅ ${accuracy()}%</span><span class="source-badge">⭐ ${state.stars}</span>${state.usage ? usageBadge() : ''}</div>
       ${state.aiLoading?`<div class="feedback" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff">✨ Ετοιμάζω καινούργια ερώτηση για ${esc(childFirstName())}…</div>`:''}
       <div class="question">${esc(question.q)}</div>
       <div class="visuals">${(question.visuals||[]).map(v=>`<span>${esc(v)}</span>`).join('')}</div>
@@ -1073,7 +1235,7 @@ function bookActivityView(){
 
 function render(){
   save();
-  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView};
+  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView, paywall:paywallView};
   app.innerHTML = (views[state.screen] || home)();
 }
 function go(screen){ state.screen=screen; state.feedback=''; state.teacherTip=''; state.answered=false; state.selectedAnswer=null; render(); }
@@ -1117,6 +1279,7 @@ app.addEventListener('click', e=>{
   const choice=e.target.closest('[data-choice]'); if(choice){ const s=stories[state.story]; const scene=s.scenes[state.storyScene]; const ch=scene.choices[Number(choice.dataset.choice)]; if(ch){ state.storyHistory.push(state.storyScene); state.storyScene=ch[1]; state.stars += 1; render(); speak(s.scenes[state.storyScene].text); } return; }
   const speakBtn=e.target.closest('[data-speak]'); if(speakBtn){ speak(speakBtn.dataset.speak); return; }
   const bookAnswer=e.target.closest('[data-book-answer]'); if(bookAnswer){ const idx=Number(bookAnswer.dataset.bookAnswer); const cq=currentBookQuestion(); const ok=idx===cq.correct; state.bookAnswered=true; state.bookSelected=idx; recordAnswer(ok,cq,cq.answers[idx]); state.bookFeedback=smartTeacherFeedback(ok,cq); speak(ok?`${childFirstName()}, μπράβο! Το βρήκες.`:`${childFirstName()}, δεν πειράζει. Πάμε να το δούμε μέσα από το κείμενο.`); render(); return; }
+  const planBtn=e.target.closest('[data-plan]'); if(planBtn){ startCheckout(planBtn.dataset.plan); return; }
   const action=e.target.closest('[data-action]'); if(action){ runAction(action.dataset.action); return; }
 });
 
@@ -1272,4 +1435,7 @@ try{
   setDeviceMode(savedMode || (autoTablet ? 'tablet' : 'phone'));
 }catch(e){ setDeviceMode('phone'); }
 
+// Freemium init: handle Stripe redirect + first usage fetch, then render.
+handleCheckoutReturn();
 render();
+fetchUsage().then(render).catch(()=>{});
