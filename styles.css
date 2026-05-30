@@ -199,3 +199,15 @@ html, body {
 @media (max-width: 880px) {
   #installBtn { bottom: 84px !important; right: 10px !important; }
 }
+
+
+/* Re-position Install button BELOW the in-app ☰ icon (top-left).
+   Auto-hides when launched as standalone PWA (already handled in JS:
+   onappinstalled hides it; standalone display-mode also hides). */
+#installBtn {
+  top: 72px !important;
+  left: 12px !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+@media (display-mode: standalone) { #installBtn { display: none !important; } }
