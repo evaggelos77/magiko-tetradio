@@ -4,11 +4,11 @@ const app = $('#app');
 const saved = JSON.parse(localStorage.getItem('magikoV14') || localStorage.getItem('magikoV13') || localStorage.getItem('magikoV11') || '{}');
 const state = {
   screen: saved.screen || 'home',
-  childName: saved.childName || 'Αλέξανδρος',
-  childAge: saved.childAge || '7',
+  childName: saved.childName || '',
+  childAge: saved.childAge || '',
   childMood: saved.childMood || 'χαρούμενος',
   childPhoto: saved.childPhoto || '',
-  parentName: saved.parentName || 'Μαμά / Μπαμπάς',
+  parentName: saved.parentName || '',
   parentRelation: saved.parentRelation || 'Γονέας',
   parentEmail: saved.parentEmail || '',
   parentPhone: saved.parentPhone || '',
@@ -452,11 +452,38 @@ function allQuestionCount(){ return Object.values(banks).reduce((a,b)=>a+b.lengt
 function randomItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function shuffle(arr){ return arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]); }
 function pack(correct, wrongs){ const choices=shuffle([correct,...wrongs]).slice(0,4); return {answers:choices, correct:choices.indexOf(correct)}; }
+/* Greek female voice picker.
+   Prefers a feminine-sounding Greek voice when available, falls back to any
+   Greek voice, then to the browser default. getVoices() is async on some
+   browsers — we listen for voiceschanged so the choice updates as voices load. */
+let _voice = null;
+function pickGreekFemaleVoice(){
+  try{
+    const all = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+    const el = all.filter(v => (v.lang||'').toLowerCase().startsWith('el'));
+    if(!el.length) return null;
+    const female = /(female|woman|melina|maria|μαρία|anna|άννα|sofia|σοφία|sotiria|σωτηρία|eleni|ελένη|voula|βούλα|katerina|κατερίνα|stella|στέλλα|elena|έλενα|despina|δέσποινα|fotini|φωτεινή|christina|χριστίνα|χρυσούλα)/i;
+    const male = /(male|man|stefanos|στέφανος|kostas|κώστας|giorgos|γιώργος|costas|nikos|νίκος|dimitris|δημήτρης|yannis|γιάννης)/i;
+    return el.find(v => female.test(v.name))
+        || el.find(v => !male.test(v.name))
+        || el[0];
+  }catch(e){ return null; }
+}
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  _voice = pickGreekFemaleVoice();
+  window.speechSynthesis.onvoiceschanged = () => { _voice = pickGreekFemaleVoice(); };
+}
 function speak(text){
   try{
+    if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(String(text));
-    u.lang = 'el-GR'; u.rate = .92; u.pitch = 1.06;
+    u.lang = 'el-GR';
+    u.rate = 0.95;
+    u.pitch = 1.18;   // a touch higher so it sounds gentler / more feminine
+    u.volume = 1;
+    const v = _voice || pickGreekFemaleVoice();
+    if (v) u.voice = v;
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -558,7 +585,18 @@ function childAvatar(){
   return `<img class="child-photo-preview" src="${esc(src)}" alt="Φωτογραφία παιδιού">`;
 }
 function personalGreeting(){
-  return `Γεια σου ${childFirstName()}! Είμαι εδώ για να μάθουμε μαζί, ήρεμα και χαρούμενα.`;
+  const n=(state.childName||'').trim();
+  return n
+    ? `Γεια σου ${childFirstName()}! Είμαι εδώ για να μάθουμε μαζί, ήρεμα και χαρούμενα.`
+    : 'Γεια σου! Είμαι εδώ για να μάθουμε μαζί, ήρεμα και χαρούμενα.';
+}
+function profileSummaryLine(){
+  const n=(state.childName||'').trim();
+  if(!n) return 'Πάτα «Στοιχεία / Φωτογραφία» για να σε γνωρίσω.';
+  const parts=[`Όνομα: ${esc(state.childName)}`];
+  if((state.childAge||'').toString().trim()) parts.push(`Ηλικία: ${esc(state.childAge)}`);
+  if((state.parentName||'').trim()) parts.push(`Γονέας: ${esc(state.parentName)}`);
+  return parts.join(' • ');
 }
 
 function nav(active){
@@ -570,9 +608,9 @@ function gradeChips(){ return `<div class="chips">${Object.entries(grades).map((
 function home(){return `<section class="screen hero">
   <div class="topbar"><button class="icon-btn" data-go="services">☰</button><h2>Μαγικό Τετράδιο</h2><button class="icon-btn" data-go="safety">🛡️</button></div>
   <img src="assets/logo.png" class="main-logo" alt="Λογότυπο">
-  <h1 class="hero-title">${esc(childFirstName())}, πάμε μαζί!</h1>
+  <h1 class="hero-title">${(state.childName||'').trim() ? `${esc(childFirstName())}, πάμε μαζί!` : 'Πάμε μαζί!'}</h1>
   <p class="hero-sub">Πλέον έχει οδηγίες λειτουργίας για γονείς, στοιχεία γονέα και παιδιού, φωτογραφία παιδιού και η AI διαβάζει το όνομα από το προφίλ για να μιλάει προσωπικά στο παιδί.</p>
-  <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>Όνομα: ${esc(state.childName)} • Ηλικία: ${esc(state.childAge)} • Γονέας: ${esc(state.parentName)}</small></div></div>
+  <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>${profileSummaryLine()}</small></div></div>
   <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button></div>
   <div class="mini-stats"><span>👤 Προφίλ παιδιού</span><span>📸 Φωτογραφία</span><span>🔊 Μιλάει με όνομα</span><span>📋 Οδηγίες γονέα</span></div>
   ${nav('home')}
