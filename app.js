@@ -848,6 +848,64 @@ function paywallView(){
   </section>`;
 }
 
+function termsView(){return `<section class="screen">
+  <div class="topbar"><button class="icon-btn" data-go="home">←</button><h2>Όροι & Απόρρητο</h2><span class="icon-btn" style="visibility:hidden">·</span></div>
+
+  <div class="card">
+    <b>👨‍👩‍👧 Για γονείς & κηδεμόνες</b>
+    <small>Το Μαγικό Τετράδιο AI Junior είναι εκπαιδευτική εφαρμογή για παιδιά Νηπιαγωγείου έως ΣΤ' Δημοτικού. Η χρήση γίνεται πάντα με την <b>επίβλεψη και συγκατάθεση γονέα/κηδεμόνα</b>. Συνιστώμενη ηλικία: 4+.</small>
+  </div>
+
+  <div class="card">
+    <b>🔒 Τι στοιχεία αποθηκεύουμε</b>
+    <small>Όνομα παιδιού, ηλικία, τάξη, φωτογραφία (αν βάλεις) και στοιχεία γονέα μένουν <b>τοπικά στη συσκευή σου</b> (localStorage του browser). Δεν μας στέλνονται και δεν τα μοιραζόμαστε ποτέ.</small>
+  </div>
+
+  <div class="card">
+    <b>🤖 Τι ταξιδεύει στο internet</b>
+    <small>Όταν ζητάς νέα AI ερώτηση ή φωνή, στέλνουμε στους παρόχους <b>μόνο το θέμα του μαθήματος</b>:
+      <br>• <b>OpenAI</b> — για τη φωνή και τις ερωτήσεις
+      <br>• <b>Stripe</b> — μόνο για πληρωμές, με τους δικούς τους όρους
+      <br>Δεν στέλνουμε ποτέ όνομα ή φωτογραφία παιδιού.
+    </small>
+  </div>
+
+  <div class="card">
+    <b>💳 Συνδρομές & ακύρωση</b>
+    <small>Οι πληρωμές γίνονται ασφαλώς μέσω <b>Stripe</b> — δεν βλέπουμε ποτέ τα στοιχεία της κάρτας. Η συνδρομή ανανεώνεται αυτόματα και μπορείς να την ακυρώσεις όποτε θες από το email επιβεβαίωσης που έστειλε το Stripe ή με mail σε εμάς.</small>
+  </div>
+
+  <div class="card">
+    <b>🧹 Διαγραφή δεδομένων</b>
+    <small>Θέλεις να σβήσεις τα στοιχεία;
+      <br>• Στις <b>Ρυθμίσεις browser</b> → καθάρισμα δεδομένων ιστότοπου.
+      <br>• Στείλε mail στο <b>info@evlabsai.gr</b> — θα διαγράψουμε ό,τι αφορά τη συνδρομή σου.
+    </small>
+  </div>
+
+  <div class="card">
+    <b>🛡️ Ασφάλεια περιεχομένου</b>
+    <small>Η AI παράγει <b>μόνο εκπαιδευτικό, παιδικό, φιλικό περιεχόμενο</b>. Δεν υπάρχει ανοιχτή συνομιλία ή είσοδος σε εξωτερικό web από το παιδί. Δεν συλλέγουμε προσωπικά δεδομένα από συνομιλίες του παιδιού.</small>
+  </div>
+
+  <div class="card">
+    <b>📜 GDPR — Τα δικαιώματά σου</b>
+    <small>Σύμφωνα με τον Γενικό Κανονισμό Προστασίας Δεδομένων (GDPR/2016/679), έχεις δικαίωμα πρόσβασης, διόρθωσης, διαγραφής και φορητότητας των δεδομένων σου. Για οποιοδήποτε ζήτημα: <b>info@evlabsai.gr</b>.</small>
+  </div>
+
+  <div class="card">
+    <b>⚖️ Δίκαιο & πάροχος</b>
+    <small>Οι παρόντες όροι διέπονται από το Ελληνικό Δίκαιο. Πάροχος υπηρεσίας: <b>ev labs ai</b>, Χαλάνδρι, Αθήνα.</small>
+  </div>
+
+  <div class="card">
+    <b>📞 Έχεις απορία;</b>
+    <small><a href="mailto:info@evlabsai.gr" style="color:#7b4cff;font-weight:900;text-decoration:none">📧 info@evlabsai.gr</a></small>
+  </div>
+
+  ${nav('home')}
+</section>`}
+
 function contactView(){return `<section class="screen">
   <div class="topbar"><button class="icon-btn" data-go="home">←</button><h2>Επικοινωνία</h2><span class="icon-btn" style="visibility:hidden">·</span></div>
   <div class="card">
@@ -928,7 +986,7 @@ function home(){return `<section class="screen hero">
   <h1 class="hero-title">${(state.childName||'').trim() ? `${esc(childFirstName())}, πάμε μαζί!` : 'Πάμε μαζί!'}</h1>
   <p class="hero-sub">Καλώς ήρθες στον μαγικό μας κόσμο! ✨ Παιχνίδια, παραμύθια και μαθήματα με μια AI φίλη που σε φωνάζει με το όνομά σου. 💜</p>
   <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>${profileSummaryLine()}</small></div></div>
-  <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button><button class="primary" data-go="paywall">💎 Πακέτα Premium</button><button class="secondary" data-go="contact">📞 Επικοινωνία</button></div>
+  <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button><button class="primary" data-go="paywall">💎 Πακέτα Premium</button><button class="secondary" data-go="contact">📞 Επικοινωνία</button><button class="secondary" data-go="terms">📜 Όροι & Απόρρητο</button></div>
   <div class="mini-stats"><span>👤 Προφίλ παιδιού</span><span>📸 Φωτογραφία</span><span>🔊 Μιλάει με όνομα</span><span>📋 Οδηγίες γονέα</span></div>
   ${state.usage ? `<div style="margin-top:12px;text-align:center">${usageBadge()}</div>` : ''}
   ${nav('home')}
@@ -1264,7 +1322,7 @@ function bookActivityView(){
 
 function render(){
   save();
-  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView, paywall:paywallView, contact:contactView};
+  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView, paywall:paywallView, contact:contactView, terms:termsView};
   app.innerHTML = (views[state.screen] || home)();
 }
 function go(screen){ state.screen=screen; state.feedback=''; state.teacherTip=''; state.answered=false; state.selectedAnswer=null; render(); }

@@ -1,5 +1,5 @@
 // Magikó Tetrádio AI Junior — simple cache-first service worker.
-const CACHE = 'magiko-tetradio-v10';
+const CACHE = 'magiko-tetradio-v11';
 const ASSETS = [
   './',
   'index.html',
