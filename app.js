@@ -40,7 +40,13 @@ const state = {
   bookQIndex: saved.bookQIndex || 0,
   bookFeedback: '',
   bookAnswered: false,
-  bookSelected: null
+  bookSelected: null,
+  /* fresh AI question state (transient, not persisted) */
+  aiQuestion: null,
+  aiLoading: false,
+  aiError: '',
+  parentTopic: '',
+  recentQs: []
 };
 
 function save(){ localStorage.setItem('magikoV14', JSON.stringify({
@@ -615,9 +621,86 @@ function autoQuestion(moduleId, seed=state.qIndex+state.stars+1){
 }
 
 function currentQuestion(){
+  // Prefer an AI-generated fresh question if we have one for this lesson
+  if(state.aiQuestion) return state.aiQuestion;
   const bank = currentBank();
   if(state.qIndex < bank.length) return bank[state.qIndex];
   return autoQuestion(state.module, state.qIndex);
+}
+
+/* Backend URL for fresh AI-generated questions (same backend as TTS) */
+const MAGIKO_QGEN_URL = (
+  (typeof window !== 'undefined' && window.MAGIKO_QGEN_URL)
+  || 'https://magiko-tetradio-backend.onrender.com'
+).replace(/\/+$/, '') + '/api/generate-question';
+
+function _remember(qtext){
+  if(!qtext) return;
+  state.recentQs = state.recentQs || [];
+  state.recentQs.push(String(qtext));
+  // keep only the last 8
+  if(state.recentQs.length > 8) state.recentQs = state.recentQs.slice(-8);
+}
+
+async function requestAiQuestion(topic){
+  if(state.aiLoading) return;
+  state.aiLoading = true;
+  state.aiError = '';
+  render();
+  try{
+    const m = (typeof currentModule === 'function') ? currentModule() : null;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 18000);
+    const res = await fetch(MAGIKO_QGEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        module: state.module,
+        moduleTitle: m && m.title ? m.title : '',
+        grade: state.grade,
+        level: state.level,
+        topic: (topic || state.parentTopic || '').trim() || null,
+        avoid: (state.recentQs || []).slice(-6)
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if(!res.ok){
+      let msg = 'Δεν μπόρεσα να φτιάξω νέα ερώτηση τώρα.';
+      try{ const j = await res.json(); if(j && j.detail) msg = String(j.detail); }catch(e){}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    // Map backend shape -> app's internal question shape (uses q(), see line ~446)
+    const visuals = data.emoji ? [String(data.emoji)] : [];
+    const aiQ = {
+      q: String(data.question || '').trim(),
+      visuals: visuals,
+      answers: (data.answers || []).slice(0, 4).map(String),
+      correct: Math.max(0, Math.min(3, Number(data.correct) || 0)),
+      help: String(data.help || '').trim(),
+      skill: String(data.tag || 'γενική'),
+      _ai: true
+    };
+    if(!aiQ.q || aiQ.answers.length !== 4) throw new Error('Μη έγκυρη ερώτηση');
+    state.aiQuestion = aiQ;
+    _remember(aiQ.q);
+    state.answered = false;
+    state.selectedAnswer = null;
+    state.feedback = '';
+    state.teacherTip = '';
+    state.screen = 'lesson';
+  }catch(err){
+    state.aiError = String((err && err.message) || 'Πρόβλημα σύνδεσης για νέα ερώτηση');
+    // graceful fallback to the existing offline generator
+    try{
+      const fb = autoQuestion(state.module, (state.qIndex||0) + Date.now());
+      if(fb){ state.aiQuestion = fb; _remember(fb.q); state.answered=false; state.selectedAnswer=null; state.feedback=''; }
+    }catch(e){}
+  }finally{
+    state.aiLoading = false;
+    render();
+  }
 }
 
 function childFirstName(){
@@ -725,14 +808,29 @@ function lessonView(){
   const m=currentModule(), question=currentQuestion(), bank=currentBank(), isAuto=state.qIndex>=bank.length;
   return `<section class="screen">
     <div class="topbar"><button class="icon-btn" data-go="modules">←</button><h2>${esc(m.title)}</h2><button class="icon-btn" data-speak="${esc(question.q)}">🔊</button></div>
-    <div class="module-head"><span class="big-emoji">${m.icon}</span><div><b>${esc(m.title)}</b><small>${isAuto?'🤖 Αυτόματη νέα ερώτηση':'📚 Έτοιμη ύλη'} • Ερώτηση ${state.qIndex+1} • 🎚️ ${levelLabel()}</small></div></div>
+    <div class="module-head"><span class="big-emoji">${m.icon}</span><div><b>${esc(m.title)}</b><small>${question._ai?'✨ Νέα AI ερώτηση':(isAuto?'🤖 Αυτόματη νέα ερώτηση':'📚 Έτοιμη ύλη')} • Ερώτηση ${state.qIndex+1} • 🎚️ ${levelLabel()}</small></div></div>
     <div class="lesson">
-      <div class="lesson-top"><span class="source-badge ${isAuto?'auto':''}">${isAuto?'🤖 auto':'📚 ύλη'}</span><span class="source-badge">🎚️ ${levelLabel()}</span><span class="source-badge">✅ ${accuracy()}%</span><span class="source-badge">⭐ ${state.stars}</span></div>
+      <div class="lesson-top"><span class="source-badge ${question._ai?'auto':(isAuto?'auto':'')}">${question._ai?'✨ AI νέα':(isAuto?'🤖 auto':'📚 ύλη')}</span><span class="source-badge">🎚️ ${levelLabel()}</span><span class="source-badge">✅ ${accuracy()}%</span><span class="source-badge">⭐ ${state.stars}</span></div>
+      ${state.aiLoading?`<div class="feedback" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff">✨ Ετοιμάζω καινούργια ερώτηση για ${esc(childFirstName())}…</div>`:''}
       <div class="question">${esc(question.q)}</div>
       <div class="visuals">${(question.visuals||[]).map(v=>`<span>${esc(v)}</span>`).join('')}</div>
-      <div class="answers">${question.answers.map((a,i)=>`<button class="answer ${state.answered ? (i===question.correct?'correct':(i===state.selectedAnswer?'wrong':'')) : ''}" data-answer="${i}">${esc(a)}</button>`).join('')}</div>
+      <div class="answers">${question.answers.map((a,i)=>`<button class="answer ${state.answered ? (i===question.correct?'correct':(i===state.selectedAnswer?'wrong':'')) : ''}" data-answer="${i}" ${state.aiLoading?'disabled':''}>${esc(a)}</button>`).join('')}</div>
       ${state.feedback?`<div class="feedback">${esc(state.feedback)}</div>`:''}
-      <div class="lesson-actions"><button class="wide green" data-action="nextQuestion">Επόμενη</button><button class="wide alt" data-action="autoQuestion">Φτιάξε νέα ερώτηση</button><button class="wide soft" data-go="review">Επανάληψη λαθών</button><button class="wide soft" data-go="levels">Επίπεδο</button></div>
+      <div class="lesson-actions">
+        <button class="wide green" data-action="nextQuestion" ${state.aiLoading?'disabled':''}>Επόμενη</button>
+        <button class="wide alt" data-action="autoQuestion" ${state.aiLoading?'disabled':''}>${state.aiLoading?'Ετοιμάζω…':'✨ Φτιάξε νέα ερώτηση'}</button>
+        <button class="wide soft" data-go="review">Επανάληψη λαθών</button>
+        <button class="wide soft" data-go="levels">Επίπεδο</button>
+      </div>
+      <div class="parent-ask" style="margin-top:10px;padding:12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)">
+        <small style="opacity:.85;display:block;margin-bottom:6px">👨‍👩‍👧 <b>Γονέας:</b> γράψε ένα θέμα και θα φτιάξει ερώτηση πάνω σε αυτό</small>
+        <div style="display:flex;gap:6px">
+          <input id="parentTopic" type="text" placeholder="π.χ. προπαίδεια του 7, κεφαλαία γράμματα, ιστορία της Ελλάδας…" value="${esc(state.parentTopic||'')}" style="flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.18);color:inherit;font:inherit" ${state.aiLoading?'disabled':''}>
+          <button class="wide alt" data-action="parentAsk" style="flex:0 0 auto;min-width:54px" ${state.aiLoading?'disabled':''}>✨</button>
+          ${(state.parentTopic||'').trim()?`<button class="wide soft" data-action="clearParentTopic" style="flex:0 0 auto;min-width:44px" title="Καθάρισμα">✕</button>`:''}
+        </div>
+        ${state.aiError?`<small style="display:block;margin-top:6px;color:#ffb3b3">${esc(state.aiError)}</small>`:''}
+      </div>
     </div>
     ${commandBox('lesson')}
     ${nav('lessonStart')}
@@ -979,7 +1077,16 @@ function render(){
   app.innerHTML = (views[state.screen] || home)();
 }
 function go(screen){ state.screen=screen; state.feedback=''; state.teacherTip=''; state.answered=false; state.selectedAnswer=null; render(); }
-function nextQuestion(auto=false){ state.qIndex += 1; state.answered=false; state.selectedAnswer=null; state.feedback=''; state.teacherTip=''; state.screen='lesson'; if(auto && state.qIndex < currentBank().length) state.qIndex=currentBank().length; render(); }
+function nextQuestion(auto=false){
+  // Remember the question we just left so the AI doesn't repeat it
+  try{ const prev=currentQuestion(); if(prev && prev.q) _remember(prev.q); }catch(e){}
+  state.aiQuestion=null; state.aiError='';
+  state.qIndex += 1;
+  state.answered=false; state.selectedAnswer=null; state.feedback=''; state.teacherTip='';
+  state.screen='lesson';
+  if(auto && state.qIndex < currentBank().length) state.qIndex=currentBank().length;
+  render();
+}
 function handleCommand(text){
   const t=(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   if(!t) return;
@@ -1030,7 +1137,22 @@ function runAction(action){
   }
   if(action==='speakGreeting'){ speak(personalGreeting()); state.feedback=personalGreeting(); render(); return; }
   if(action==='nextQuestion'){ nextQuestion(false); return; }
-  if(action==='autoQuestion'){ nextQuestion(true); return; }
+  if(action==='autoQuestion'){
+    // Try to bring a fresh AI question; on failure we fall back to existing logic.
+    const topic = ($('#parentTopic')?.value || '').trim();
+    requestAiQuestion(topic);
+    return;
+  }
+  if(action==='parentAsk'){
+    const topic = ($('#parentTopic')?.value || '').trim();
+    state.parentTopic = topic;
+    if(!topic){ state.aiError='Γράψε λίγες λέξεις στο πλαίσιο (π.χ. προπαίδεια του 7).'; render(); return; }
+    requestAiQuestion(topic);
+    return;
+  }
+  if(action==='clearParentTopic'){
+    state.parentTopic=''; state.aiError=''; const i=$('#parentTopic'); if(i) i.value=''; render(); return;
+  }
   if(action==='sendCommand'){ handleCommand($('#commandInput')?.value || ''); return; }
   if(action==='voiceCommand'){ startVoice(); return; }
   if(action==='randomStory'){ randomStory(); return; }
