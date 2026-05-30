@@ -211,3 +211,38 @@ html, body {
   bottom: auto !important;
 }
 @media (display-mode: standalone) { #installBtn { display: none !important; } }
+
+
+/* ============================================================
+   Kid-friendly font (Nunito — rounded, cheerful, supports Greek)
+   + colorful rainbow titles, bouncy weights
+   ============================================================ */
+html, body, button, input, select, textarea {
+  font-family: "Nunito", system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", "Helvetica Neue", Arial, sans-serif !important;
+  font-weight: 700;
+}
+b, strong, h1, h2, h3, h4 { font-weight: 900 !important; letter-spacing: -.01em; }
+.hero-title,
+.brand-box h1,
+.module-head b,
+.question {
+  background: linear-gradient(90deg, #ff6cc7 0%, #ffa84a 22%, #ffd95a 45%, #62de8b 66%, #58c4ff 86%, #b07bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
+}
+.section-kicker,
+.source-badge {
+  background: linear-gradient(135deg, #fff0a8, #ffd0e7) !important;
+  color: #5d3700 !important;
+  border: 0;
+}
+.primary, .wide.alt, .wide.green {
+  letter-spacing: .01em;
+}
+.bottom-nav button.active {
+  background: linear-gradient(135deg, #ffe0a3, #ffc4e1, #d9c1ff) !important;
+}

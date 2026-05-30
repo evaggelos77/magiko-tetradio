@@ -848,6 +848,35 @@ function paywallView(){
   </section>`;
 }
 
+function contactView(){return `<section class="screen">
+  <div class="topbar"><button class="icon-btn" data-go="home">←</button><h2>Επικοινωνία</h2><span class="icon-btn" style="visibility:hidden">·</span></div>
+  <div class="card">
+    <b style="font-size:20px">💜 ev labs ai</b>
+    <small>Φτιάχνουμε ασφαλείς AI εφαρμογές με αγάπη για τα παιδιά και τις οικογένειες. Εδώ είμαστε για κάθε ερώτηση, ιδέα ή υποστήριξη.</small>
+  </div>
+  <a class="card" href="mailto:info@evlabsai.gr?subject=Μαγικό%20Τετράδιο%20AI%20Junior" style="text-decoration:none;display:block;color:inherit">
+    <b>✉️ Στείλε μας email</b>
+    <small>info@evlabsai.gr</small>
+  </a>
+  <a class="card" href="https://evlabsai.gr" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit">
+    <b>🌐 Το site μας</b>
+    <small>evlabsai.gr — δες και τις άλλες AI εφαρμογές μας</small>
+  </a>
+  <div class="card">
+    <b>📍 Έδρα</b>
+    <small>Χαλάνδρι, Αθήνα · Ελλάδα</small>
+  </div>
+  <div class="card">
+    <b>👨‍👩‍👧 Για γονείς</b>
+    <small>Έχεις πρόταση, παράπονο ή ιδέα για νέο μάθημα; Πες μας — διαβάζουμε όλα τα μηνύματα.</small>
+  </div>
+  <div class="card">
+    <b>🛡️ Ασφάλεια & απόρρητο</b>
+    <small>Τα στοιχεία του παιδιού μένουν τοπικά στη συσκευή σου. Δεν τα μοιραζόμαστε με τρίτους. Οι πληρωμές γίνονται μέσω Stripe.</small>
+  </div>
+  ${nav('home')}
+</section>`}
+
 function handleCheckoutReturn(){
   try{
     const sp = new URLSearchParams(window.location.search);
@@ -897,9 +926,9 @@ function home(){return `<section class="screen hero">
   <div class="topbar"><button class="icon-btn" data-go="services">☰</button><h2>Μαγικό Τετράδιο</h2><button class="icon-btn" data-go="safety">🛡️</button></div>
   <img src="assets/logo.png" class="main-logo" alt="Λογότυπο">
   <h1 class="hero-title">${(state.childName||'').trim() ? `${esc(childFirstName())}, πάμε μαζί!` : 'Πάμε μαζί!'}</h1>
-  <p class="hero-sub">Πλέον έχει οδηγίες λειτουργίας για γονείς, στοιχεία γονέα και παιδιού, φωτογραφία παιδιού και η AI διαβάζει το όνομα από το προφίλ για να μιλάει προσωπικά στο παιδί.</p>
+  <p class="hero-sub">Καλώς ήρθες στον μαγικό μας κόσμο! ✨ Παιχνίδια, παραμύθια και μαθήματα με μια AI φίλη που σε φωνάζει με το όνομά σου. 💜</p>
   <div class="safe-card child-card">${childAvatar()}<div><b>${esc(personalGreeting())}</b><small>${profileSummaryLine()}</small></div></div>
-  <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button></div>
+  <div class="actions"><button class="primary" data-action="speakGreeting">🔊 Μίλα μου με το όνομά μου</button><button class="secondary" data-go="profile">👤 Στοιχεία / Φωτογραφία</button><button class="secondary" data-go="guide">📋 Οδηγίες γονέα</button><button class="primary" data-go="lessonStart">Ξεκίνα μάθημα</button><button class="secondary" data-go="fairytales">Άκου παραμύθι</button><button class="secondary" data-go="library">AI Βιβλιοθήκη</button><button class="secondary" data-go="parent">Γονικός πίνακας</button><button class="primary" data-go="paywall">💎 Πακέτα Premium</button><button class="secondary" data-go="contact">📞 Επικοινωνία</button></div>
   <div class="mini-stats"><span>👤 Προφίλ παιδιού</span><span>📸 Φωτογραφία</span><span>🔊 Μιλάει με όνομα</span><span>📋 Οδηγίες γονέα</span></div>
   ${state.usage ? `<div style="margin-top:12px;text-align:center">${usageBadge()}</div>` : ''}
   ${nav('home')}
@@ -1235,7 +1264,7 @@ function bookActivityView(){
 
 function render(){
   save();
-  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView, paywall:paywallView};
+  const views={home, profile, services:servicesView, guide:guideView, curriculum:curriculumView, grades:gradesView, modules:modulesView, lessonStart, lesson:lessonView, fairytales:fairytalesView, story:storyView, daily:dailyView, progress:progressView, levels:levelsView, review:reviewView, parent:parentView, teacher:teacherView, safety:safetyView, calm:calmView, rewards:rewardsView, photo:photoView, voice:voiceView, library:libraryView, bookActivity:bookActivityView, paywall:paywallView, contact:contactView};
   app.innerHTML = (views[state.screen] || home)();
 }
 function go(screen){ state.screen=screen; state.feedback=''; state.teacherTip=''; state.answered=false; state.selectedAnswer=null; render(); }
